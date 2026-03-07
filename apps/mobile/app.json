@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "NookMe",
+    "slug": "nookme",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nookme",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0F0F13"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "xyz.nookme.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F0F13"
+      },
+      "package": "xyz.nookme.app"
+    },
+    "plugins": ["expo-router", "expo-font"]
+  }
+}

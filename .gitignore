@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Native
+*.hprof
+android/
+ios/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build
+build/
+*.tsbuildinfo
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Testing
+coverage/
+
+# Misc
+*.log
+.cache/
