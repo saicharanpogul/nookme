@@ -9,27 +9,25 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, radius } from '@nookme/shared';
+import { colors, typography, spacing, radius, shadows } from '@nookme/shared';
 import { mockNooks } from '@/data/mockData';
 
-function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () => void }) {
-  const memberAvatars = nook.members.slice(0, 3).map(m => m.avatar).join('');
+function NookAvatar({ iconName, color }: { iconName: string; color: string }) {
+  return (
+    <View style={[styles.nookAvatar, { backgroundColor: color + '14' }]}>
+      <Ionicons name={iconName as any} size={22} color={color} />
+    </View>
+  );
+}
 
+function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () => void }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.nookCard, pressed && styles.nookCardPressed]}
       onPress={onPress}
     >
-      {/* Avatar */}
-      <View style={[styles.nookAvatar, nook.isPinned && styles.nookAvatarPinned]}>
-        <Text style={styles.nookAvatarText}>
-          {nook.members.length > 2
-            ? nook.name.split(' ')[0].charAt(0)
-            : nook.members[1]?.avatar || '🧩'}
-        </Text>
-      </View>
+      <NookAvatar iconName={nook.iconName} color={nook.color} />
 
-      {/* Content */}
       <View style={styles.nookContent}>
         <View style={styles.nookHeader}>
           <View style={styles.nookNameRow}>
@@ -45,17 +43,15 @@ function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () =>
           <Text style={styles.nookDescription} numberOfLines={1}>
             {nook.description}
           </Text>
-          <View style={styles.nookStats}>
-            {nook.unreadCount > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadText}>{nook.unreadCount}</Text>
-              </View>
-            )}
-          </View>
+          {nook.unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{nook.unreadCount}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.nookFooter}>
-          <Text style={styles.nookMembers}>{memberAvatars} </Text>
+          <Ionicons name="people-outline" size={13} color={colors.textMuted} />
           <Text style={styles.nookMemberCount}>
             {nook.members.length} members · {nook.contentCount} items
           </Text>
@@ -82,8 +78,8 @@ export default function HomeScreen() {
           <Pressable style={styles.headerButton}>
             <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
           </Pressable>
-          <Pressable style={styles.headerButton}>
-            <Ionicons name="add-circle" size={28} color={colors.primary} />
+          <Pressable style={styles.headerButtonPrimary}>
+            <Ionicons name="add" size={20} color={colors.textInverse} />
           </Pressable>
         </View>
       </View>
@@ -102,23 +98,22 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
-          /* Quick Actions */
           <View style={styles.quickActions}>
-            <Pressable style={styles.quickAction}>
+            <Pressable style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}>
               <View style={[styles.quickActionIcon, { backgroundColor: colors.primarySurface }]}>
-                <Ionicons name="people" size={18} color={colors.primary} />
+                <Ionicons name="people-outline" size={18} color={colors.primary} />
               </View>
               <Text style={styles.quickActionText}>New Nook</Text>
             </Pressable>
-            <Pressable style={styles.quickAction}>
+            <Pressable style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}>
               <View style={[styles.quickActionIcon, { backgroundColor: colors.accentGreenSurface }]}>
-                <Ionicons name="person-add" size={18} color={colors.accentGreen} />
+                <Ionicons name="person-add-outline" size={18} color={colors.accentGreen} />
               </View>
               <Text style={styles.quickActionText}>Invite</Text>
             </Pressable>
-            <Pressable style={styles.quickAction}>
+            <Pressable style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}>
               <View style={[styles.quickActionIcon, { backgroundColor: colors.accentBlueSurface }]}>
-                <Ionicons name="link" size={18} color={colors.accentBlue} />
+                <Ionicons name="link-outline" size={18} color={colors.accentBlue} />
               </View>
               <Text style={styles.quickActionText}>Share Link</Text>
             </Pressable>
@@ -140,13 +135,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: typography.size['2xl'],
     fontWeight: '700',
     color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: typography.size.sm,
@@ -159,28 +155,38 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: radius.sm,
+  },
+  headerButtonPrimary: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
+    gap: 10,
   },
   quickAction: {
     flex: 1,
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     paddingVertical: 14,
     gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  quickActionPressed: {
+    backgroundColor: colors.surfaceHover,
   },
   quickActionIcon: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -193,7 +199,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   separator: {
-    height: 1,
+    height: 0.5,
     backgroundColor: colors.border,
     marginLeft: 80,
   },
@@ -204,28 +210,18 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   nookCardPressed: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surface,
   },
   nookAvatar: {
     width: 52,
     height: 52,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceElevated,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  nookAvatarPinned: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySurface,
-  },
-  nookAvatarText: {
-    fontSize: 22,
   },
   nookContent: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   nookHeader: {
     flexDirection: 'row',
@@ -259,10 +255,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  nookStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   unreadBadge: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -273,18 +265,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: {
-    color: colors.textPrimary,
+    color: colors.textInverse,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   nookFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     marginTop: 2,
-  },
-  nookMembers: {
-    fontSize: 14,
   },
   nookMemberCount: {
     fontSize: typography.size.xs,

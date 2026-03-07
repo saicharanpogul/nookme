@@ -1,46 +1,49 @@
-// NookMe Shared Package — Theme Tokens & Types
+// NookMe Shared Package — Apple-Style Light Theme Tokens & Types
 
-// ─── Color Palette ──────────────────────────────────────────
+// ─── Color Palette (Apple / iOS Inspired) ───────────────────
 export const colors = {
   // Backgrounds
-  background: '#0F0F13',
-  surface: '#1A1A24',
-  surfaceElevated: '#252536',
-  surfaceHover: '#2E2E42',
+  background: '#FFFFFF',
+  surface: '#F5F5F7',
+  surfaceElevated: '#FFFFFF',
+  surfaceHover: '#F0F0F2',
 
-  // Primary
-  primary: '#7C5CFC',
-  primaryGlow: '#9B7FFF',
-  primaryMuted: '#5A3FBF',
-  primarySurface: 'rgba(124, 92, 252, 0.12)',
+  // Primary (iOS Blue)
+  primary: '#007AFF',
+  primaryLight: '#409CFF',
+  primaryMuted: '#005EC4',
+  primarySurface: 'rgba(0, 122, 255, 0.08)',
 
-  // Accents
-  accentGreen: '#2DD4A8',
-  accentGreenSurface: 'rgba(45, 212, 168, 0.12)',
-  accentBlue: '#3B82F6',
-  accentBlueSurface: 'rgba(59, 130, 246, 0.12)',
-  accentOrange: '#F59E0B',
-  accentPink: '#EC4899',
+  // Accents (iOS System Colors)
+  accentGreen: '#34C759',
+  accentGreenSurface: 'rgba(52, 199, 89, 0.08)',
+  accentBlue: '#5856D6',
+  accentBlueSurface: 'rgba(88, 86, 214, 0.08)',
+  accentOrange: '#FF9500',
+  accentOrangeSurface: 'rgba(255, 149, 0, 0.08)',
+  accentPink: '#FF2D55',
+  accentTeal: '#5AC8FA',
+  accentIndigo: '#5856D6',
 
   // Text
-  textPrimary: '#F0F0F5',
-  textSecondary: '#8B8BA3',
-  textMuted: '#5C5C73',
-  textInverse: '#0F0F13',
+  textPrimary: '#1D1D1F',
+  textSecondary: '#86868B',
+  textMuted: '#AEAEB2',
+  textInverse: '#FFFFFF',
 
   // Borders
-  border: '#2A2A3D',
-  borderLight: '#353550',
-  borderFocus: '#7C5CFC',
+  border: '#E5E5EA',
+  borderLight: '#F2F2F7',
+  borderFocus: '#007AFF',
 
   // Status
-  online: '#2DD4A8',
-  danger: '#EF4444',
-  warning: '#F59E0B',
+  online: '#34C759',
+  danger: '#FF3B30',
+  warning: '#FF9500',
 
   // Overlay
-  overlay: 'rgba(0, 0, 0, 0.6)',
-  glassBg: 'rgba(26, 26, 36, 0.85)',
+  overlay: 'rgba(0, 0, 0, 0.3)',
+  glassBg: 'rgba(255, 255, 255, 0.85)',
 } as const;
 
 // ─── Typography ─────────────────────────────────────────────
@@ -84,42 +87,42 @@ export const spacing = {
 
 // ─── Border Radius ──────────────────────────────────────────
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
   full: 999,
 } as const;
 
-// ─── Shadows ────────────────────────────────────────────────
+// ─── Shadows (Apple-style soft shadows) ─────────────────────
 export const shadows = {
   sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 3,
   },
   lg: {
-    shadowColor: '#7C5CFC',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 6,
   },
-  glow: {
-    shadowColor: '#7C5CFC',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
 } as const;
 
@@ -130,7 +133,8 @@ export interface User {
   id: string;
   displayName: string;
   username: string;
-  avatar: string;
+  avatarColor: string;
+  initials: string;
   status: 'online' | 'offline' | 'away';
 }
 
@@ -146,7 +150,7 @@ export interface ContentCard {
   platform: Platform;
   title: string;
   description?: string;
-  thumbnail?: string;
+  iconName: string;
   creator?: string;
   sharedBy: User;
   sharedAt: string;
@@ -172,21 +176,32 @@ export interface Nook {
   lastActivity: string;
   unreadCount: number;
   contentCount: number;
-  avatar?: string;
+  iconName: string;
+  color: string;
   isPinned: boolean;
 }
 
 // ─── Platform Colors ────────────────────────────────────────
 export const platformColors: Record<Platform, string> = {
   instagram: '#E4405F',
-  tiktok: '#00F2EA',
+  tiktok: '#000000',
   youtube: '#FF0000',
   twitter: '#1DA1F2',
-  web: '#8B8BA3',
-  image: '#2DD4A8',
+  web: '#86868B',
+  image: '#34C759',
 };
 
-// ─── Platform Icons ─────────────────────────────────────────
+// ─── Platform Icon Names (Ionicons) ─────────────────────────
+export const platformIcons: Record<Platform, string> = {
+  instagram: 'logo-instagram',
+  tiktok: 'musical-notes',
+  youtube: 'logo-youtube',
+  twitter: 'logo-twitter',
+  web: 'globe-outline',
+  image: 'image-outline',
+};
+
+// ─── Platform Labels ────────────────────────────────────────
 export const platformLabels: Record<Platform, string> = {
   instagram: 'Instagram',
   tiktok: 'TikTok',
@@ -196,5 +211,8 @@ export const platformLabels: Record<Platform, string> = {
   image: 'Image',
 };
 
-// ─── Reaction Emoji Set ─────────────────────────────────────
-export const reactionEmojis = ['🔥', '😂', '🤯', '❤️', '👀', '💀', '🙌', '💯'] as const;
+// ─── Nook Colors (for avatar backgrounds) ───────────────────
+export const nookColors = [
+  '#007AFF', '#34C759', '#FF9500', '#FF2D55',
+  '#5856D6', '#5AC8FA', '#AF52DE', '#FF3B30',
+] as const;

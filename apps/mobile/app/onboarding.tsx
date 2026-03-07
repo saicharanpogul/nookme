@@ -5,32 +5,31 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
-import { LinearGradient } from 'expo-linear-gradient';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const slides = [
   {
-    emoji: '🧩',
+    icon: 'share-outline' as const,
+    iconColor: '#007AFF',
     title: 'Share Differently',
     subtitle: 'Every link becomes a\nstructured content card',
-    gradient: [colors.primary, '#4F35B8'] as const,
   },
   {
-    emoji: '💬',
+    icon: 'chatbubbles-outline' as const,
+    iconColor: '#5856D6',
     title: 'Threaded Conversations',
     subtitle: 'Discuss each piece of content\nin its own dedicated thread',
-    gradient: [colors.accentBlue, '#2563EB'] as const,
   },
   {
-    emoji: '🧠',
+    icon: 'cloud-done-outline' as const,
+    iconColor: '#34C759',
     title: 'Shared Memory',
     subtitle: 'Your conversations never\nget lost — everything is saved',
-    gradient: [colors.accentGreen, '#059669'] as const,
   },
 ];
 
@@ -50,15 +49,6 @@ export default function Onboarding() {
 
   return (
     <View style={styles.container}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={[colors.background, slide.gradient[1], colors.background]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFillObject}
-        locations={[0, 0.5, 1]}
-      />
-
       {/* Skip button */}
       <Pressable
         style={styles.skipButton}
@@ -69,9 +59,9 @@ export default function Onboarding() {
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Emoji */}
-        <View style={styles.emojiContainer}>
-          <Text style={styles.emoji}>{slide.emoji}</Text>
+        {/* Icon */}
+        <View style={[styles.iconContainer, { backgroundColor: slide.iconColor + '12' }]}>
+          <Ionicons name={slide.icon} size={48} color={slide.iconColor} />
         </View>
 
         {/* Title */}
@@ -94,17 +84,14 @@ export default function Onboarding() {
 
       {/* Bottom CTA */}
       <View style={styles.bottom}>
-        <Pressable style={styles.nextButton} onPress={handleNext}>
-          <LinearGradient
-            colors={[colors.primary, colors.primaryMuted]}
-            style={styles.nextButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Text style={styles.nextButtonText}>
-              {currentSlide === slides.length - 1 ? 'Get Started' : 'Next'}
-            </Text>
-          </LinearGradient>
+        <Pressable
+          style={({ pressed }) => [styles.nextButton, pressed && styles.nextButtonPressed]}
+          onPress={handleNext}
+        >
+          <Text style={styles.nextButtonText}>
+            {currentSlide === slides.length - 1 ? 'Get Started' : 'Continue'}
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
         </Pressable>
       </View>
     </View>
@@ -135,19 +122,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 40,
   },
-  emojiContainer: {
+  iconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 40,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  emoji: {
-    fontSize: 56,
   },
   title: {
     fontSize: typography.size['3xl'],
@@ -155,6 +136,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typography.size.lg,
@@ -171,7 +153,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.border,
   },
   dotActive: {
     width: 24,
@@ -182,17 +164,20 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   nextButton: {
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  nextButtonGradient: {
     paddingVertical: 18,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+  },
+  nextButtonPressed: {
+    opacity: 0.85,
   },
   nextButtonText: {
-    color: colors.textPrimary,
+    color: colors.textInverse,
     fontSize: typography.size.lg,
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

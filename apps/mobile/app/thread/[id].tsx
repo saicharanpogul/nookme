@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, radius, platformColors, reactionEmojis } from '@nookme/shared';
+import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
 import { mockContentCards, mockMessages, currentUser } from '@/data/mockData';
 
 function MessageBubble({ message }: { message: typeof mockMessages[0] }) {
@@ -21,8 +21,8 @@ function MessageBubble({ message }: { message: typeof mockMessages[0] }) {
   return (
     <View style={[styles.messageBubbleWrapper, isMe && styles.messageBubbleWrapperMe]}>
       {!isMe && (
-        <View style={styles.messageAvatar}>
-          <Text style={styles.messageAvatarText}>{message.sender.avatar}</Text>
+        <View style={[styles.messageAvatar, { backgroundColor: message.sender.avatarColor }]}>
+          <Text style={styles.messageAvatarText}>{message.sender.initials}</Text>
         </View>
       )}
       <View style={styles.messageContentWrapper}>
@@ -30,9 +30,7 @@ function MessageBubble({ message }: { message: typeof mockMessages[0] }) {
           <Text style={styles.messageSender}>{message.sender.displayName}</Text>
         )}
         <View style={[styles.messageBubble, isMe && styles.messageBubbleMe]}>
-          <Text style={[styles.messageText, isMe && styles.messageTextMe]}>
-            {message.text}
-          </Text>
+          <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{message.text}</Text>
         </View>
         <View style={styles.messageFooter}>
           <Text style={styles.messageTime}>{message.sentAt}</Text>
@@ -64,20 +62,15 @@ export default function ThreadView() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>Thread</Text>
+          <Text style={styles.headerTitle}>Thread</Text>
           <Text style={styles.headerSubtitle}>{card.threadCount} replies</Text>
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-        {/* Thread Content */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <FlatList
           data={mockMessages}
           keyExtractor={(item) => item.id}
@@ -85,27 +78,11 @@ export default function ThreadView() {
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            /* Original Content Card */
             <View style={styles.originalCard}>
               <View style={styles.originalCardHeader}>
-                <View
-                  style={[
-                    styles.platformBadge,
-                    { backgroundColor: platformColors[card.platform] + '20' },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.platformDotSmall,
-                      { backgroundColor: platformColors[card.platform] },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.platformBadgeText,
-                      { color: platformColors[card.platform] },
-                    ]}
-                  >
+                <View style={[styles.platformBadge, { backgroundColor: platformColors[card.platform] + '12' }]}>
+                  <Ionicons name={platformIcons[card.platform] as any} size={14} color={platformColors[card.platform]} />
+                  <Text style={[styles.platformBadgeText, { color: platformColors[card.platform] }]}>
                     {card.platform}
                   </Text>
                 </View>
@@ -113,8 +90,8 @@ export default function ThreadView() {
               </View>
 
               <View style={styles.originalCardBody}>
-                <View style={styles.originalCardThumbnail}>
-                  <Text style={styles.originalCardThumbnailText}>{card.thumbnail}</Text>
+                <View style={[styles.originalCardThumbnail, { backgroundColor: platformColors[card.platform] + '12' }]}>
+                  <Ionicons name={platformIcons[card.platform] as any} size={32} color={platformColors[card.platform]} />
                 </View>
                 <View style={styles.originalCardContent}>
                   <Text style={styles.originalCardTitle}>{card.title}</Text>
@@ -124,7 +101,6 @@ export default function ThreadView() {
                 </View>
               </View>
 
-              {/* Reactions on original card */}
               <View style={styles.originalCardReactions}>
                 {card.reactions.map((r, i) => (
                   <Pressable key={i} style={styles.reactionPill}>
@@ -139,9 +115,7 @@ export default function ThreadView() {
 
               <View style={styles.threadDivider}>
                 <View style={styles.threadDividerLine} />
-                <Text style={styles.threadDividerText}>
-                  {card.threadCount} replies
-                </Text>
+                <Text style={styles.threadDividerText}>{card.threadCount} replies</Text>
                 <View style={styles.threadDividerLine} />
               </View>
             </View>
@@ -162,14 +136,8 @@ export default function ThreadView() {
               onChangeText={setMessageText}
               multiline
             />
-            <Pressable
-              style={[styles.sendButton, messageText.length > 0 && styles.sendButtonActive]}
-            >
-              <Ionicons
-                name="send"
-                size={18}
-                color={messageText.length > 0 ? colors.textPrimary : colors.textMuted}
-              />
+            <Pressable style={[styles.sendButton, messageText.length > 0 && styles.sendButtonActive]}>
+              <Ionicons name="arrow-up" size={18} color={messageText.length > 0 ? colors.textInverse : colors.textMuted} />
             </Pressable>
           </View>
         </View>
@@ -179,281 +147,88 @@ export default function ThreadView() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10,
+    borderBottomWidth: 0.5, borderBottomColor: colors.border, gap: 8,
   },
-  backButton: {
-    padding: 4,
-  },
-  headerCenter: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  headerSubtitle: {
-    fontSize: typography.size.xs,
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-  messageList: {
-    padding: 16,
-    paddingBottom: 8,
-  },
+  backButton: { padding: 4 },
+  headerCenter: { flex: 1 },
+  headerTitle: { fontSize: typography.size.lg, fontWeight: '600', color: colors.textPrimary },
+  headerSubtitle: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 1 },
+  messageList: { padding: 16, paddingBottom: 8 },
   originalCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: 16, marginBottom: 8,
   },
   originalCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12,
   },
   platformBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.full, gap: 6,
   },
-  platformDotSmall: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  platformBadgeText: {
-    fontSize: typography.size.xs,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  originalCardTime: {
-    fontSize: typography.size.xs,
-    color: colors.textMuted,
-  },
-  originalCardBody: {
-    flexDirection: 'row',
-    gap: 14,
-    marginBottom: 14,
-  },
+  platformBadgeText: { fontSize: typography.size.xs, fontWeight: '600', textTransform: 'capitalize' },
+  originalCardTime: { fontSize: typography.size.xs, color: colors.textMuted },
+  originalCardBody: { flexDirection: 'row', gap: 14, marginBottom: 14 },
   originalCardThumbnail: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 68, height: 68, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
   },
-  originalCardThumbnailText: {
-    fontSize: 36,
-  },
-  originalCardContent: {
-    flex: 1,
-    gap: 6,
-  },
-  originalCardTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    lineHeight: 24,
-  },
-  originalCardDescription: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  originalCardReactions: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    marginBottom: 14,
-  },
+  originalCardContent: { flex: 1, gap: 4 },
+  originalCardTitle: { fontSize: typography.size.lg, fontWeight: '600', color: colors.textPrimary, lineHeight: 24 },
+  originalCardDescription: { fontSize: typography.size.sm, color: colors.textSecondary, lineHeight: 20 },
+  originalCardReactions: { flexDirection: 'row', gap: 8, alignItems: 'center', marginBottom: 14 },
   reactionPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background,
+    borderRadius: radius.full, paddingHorizontal: 10, paddingVertical: 6, gap: 4,
   },
-  reactionPillEmoji: {
-    fontSize: 16,
-  },
-  reactionPillCount: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
+  reactionPillEmoji: { fontSize: 16 },
+  reactionPillCount: { fontSize: typography.size.sm, color: colors.textSecondary, fontWeight: '600' },
   addReactionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background,
+    alignItems: 'center', justifyContent: 'center',
   },
-  threadDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  threadDividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  threadDividerText: {
-    fontSize: typography.size.xs,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
-  messageBubbleWrapper: {
-    flexDirection: 'row',
-    marginVertical: 6,
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  messageBubbleWrapperMe: {
-    flexDirection: 'row-reverse',
-  },
+  threadDivider: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  threadDividerLine: { flex: 1, height: 0.5, backgroundColor: colors.border },
+  threadDividerText: { fontSize: typography.size.xs, color: colors.textMuted, fontWeight: '500' },
+  messageBubbleWrapper: { flexDirection: 'row', marginVertical: 6, gap: 10, alignItems: 'flex-start' },
+  messageBubbleWrapperMe: { flexDirection: 'row-reverse' },
   messageAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceElevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
+    width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
-  messageAvatarText: {
-    fontSize: 16,
-  },
-  messageContentWrapper: {
-    maxWidth: '75%',
-    gap: 4,
-  },
-  messageSender: {
-    fontSize: typography.size.xs,
-    color: colors.textMuted,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
+  messageAvatarText: { fontSize: 11, fontWeight: '700', color: colors.textInverse },
+  messageContentWrapper: { maxWidth: '75%', gap: 4 },
+  messageSender: { fontSize: typography.size.xs, color: colors.textMuted, fontWeight: '600', marginLeft: 4 },
   messageBubble: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderTopLeftRadius: radius.sm,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderTopLeftRadius: radius.sm,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
   messageBubbleMe: {
-    backgroundColor: colors.primarySurface,
-    borderColor: 'rgba(124, 92, 252, 0.3)',
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.sm,
+    backgroundColor: colors.primary, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.sm,
   },
-  messageText: {
-    fontSize: typography.size.md,
-    color: colors.textPrimary,
-    lineHeight: 22,
-  },
-  messageTextMe: {
-    color: colors.textPrimary,
-  },
-  messageFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 4,
-  },
-  messageTime: {
-    fontSize: 10,
-    color: colors.textMuted,
-  },
-  messageReactions: {
-    flexDirection: 'row',
-    gap: 4,
-  },
+  messageText: { fontSize: typography.size.md, color: colors.textPrimary, lineHeight: 22 },
+  messageTextMe: { color: colors.textInverse },
+  messageFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
+  messageTime: { fontSize: 10, color: colors.textMuted },
+  messageReactions: { flexDirection: 'row', gap: 4 },
   miniReaction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.full,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: colors.surface,
+    borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 2,
   },
-  miniReactionEmoji: {
-    fontSize: 11,
-  },
-  miniReactionCount: {
-    fontSize: 10,
-    color: colors.textMuted,
-  },
+  miniReactionEmoji: { fontSize: 11 },
+  miniReactionCount: { fontSize: 10, color: colors.textMuted },
   composer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingBottom: 30,
-    backgroundColor: colors.surface,
+    borderTopWidth: 0.5, borderTopColor: colors.border, paddingHorizontal: 16,
+    paddingVertical: 10, paddingBottom: 30, backgroundColor: colors.background,
   },
   composerInner: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.xl,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    flexDirection: 'row', alignItems: 'flex-end', backgroundColor: colors.surface,
+    borderRadius: radius.xl, paddingHorizontal: 12, paddingVertical: 8, gap: 8,
   },
-  composerAction: {
-    padding: 4,
-    marginBottom: 2,
-  },
-  composerInput: {
-    flex: 1,
-    fontSize: typography.size.md,
-    color: colors.textPrimary,
-    maxHeight: 100,
-    paddingVertical: 4,
-  },
+  composerAction: { padding: 4, marginBottom: 2 },
+  composerInput: { flex: 1, fontSize: typography.size.md, color: colors.textPrimary, maxHeight: 100, paddingVertical: 4 },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceHover,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  sendButtonActive: {
-    backgroundColor: colors.primary,
-  },
+  sendButtonActive: { backgroundColor: colors.primary },
 });

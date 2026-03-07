@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
 
 export default function Login() {
@@ -30,7 +30,7 @@ export default function Login() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>🧩</Text>
+            <Ionicons name="grid" size={32} color={colors.primary} />
           </View>
           <Text style={styles.logoText}>NookMe</Text>
           <Text style={styles.logoSubtext}>Your shared content space</Text>
@@ -40,59 +40,67 @@ export default function Login() {
         <View style={styles.form}>
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@email.com"
-              placeholderTextColor={colors.textMuted}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="you@email.com"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
           </View>
 
           <Pressable style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot password?</Text>
           </Pressable>
 
-          <Pressable onPress={handleLogin} style={styles.loginButton}>
-            <LinearGradient
-              colors={[colors.primary, colors.primaryMuted]}
-              style={styles.loginButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            </LinearGradient>
+          <Pressable
+            style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
+            onPress={handleLogin}
+          >
+            <Text style={styles.loginButtonText}>Sign In</Text>
           </Pressable>
 
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>or continue with</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Social Login Buttons */}
           <View style={styles.socialButtons}>
-            <Pressable style={styles.socialButton} onPress={handleLogin}>
-              <Text style={styles.socialIcon}>🍎</Text>
+            <Pressable
+              style={({ pressed }) => [styles.socialButton, pressed && styles.socialButtonPressed]}
+              onPress={handleLogin}
+            >
+              <Ionicons name="logo-apple" size={20} color={colors.textPrimary} />
               <Text style={styles.socialButtonText}>Apple</Text>
             </Pressable>
-            <Pressable style={styles.socialButton} onPress={handleLogin}>
-              <Text style={styles.socialIcon}>🔵</Text>
+            <Pressable
+              style={({ pressed }) => [styles.socialButton, pressed && styles.socialButtonPressed]}
+              onPress={handleLogin}
+            >
+              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
               <Text style={styles.socialButtonText}>Google</Text>
             </Pressable>
           </View>
@@ -127,23 +135,19 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     backgroundColor: colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(124, 92, 252, 0.3)',
-  },
-  logoEmoji: {
-    fontSize: 40,
   },
   logoText: {
     fontSize: typography.size['3xl'],
     fontWeight: '700',
     color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   logoSubtext: {
     fontSize: typography.size.md,
@@ -162,12 +166,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingLeft: 4,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
     paddingVertical: 14,
     fontSize: typography.size.md,
     color: colors.textPrimary,
@@ -182,25 +192,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   loginButton: {
+    backgroundColor: colors.primary,
     borderRadius: radius.md,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  loginButtonGradient: {
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
+  },
+  loginButtonPressed: {
+    opacity: 0.85,
   },
   loginButtonText: {
-    color: colors.textPrimary,
+    color: colors.textInverse,
     fontSize: typography.size.lg,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginVertical: 8,
+    marginVertical: 4,
   },
   dividerLine: {
     flex: 1,
@@ -220,15 +231,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingVertical: 14,
     gap: 8,
   },
-  socialIcon: {
-    fontSize: 20,
+  socialButtonPressed: {
+    backgroundColor: colors.surface,
   },
   socialButtonText: {
     color: colors.textPrimary,

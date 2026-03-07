@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
 
 export default function Signup() {
@@ -39,61 +39,69 @@ export default function Signup() {
         <View style={styles.form}>
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="John Appleseed"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="John Appleseed"
+                placeholderTextColor={colors.textMuted}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Username</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="@username"
-              placeholderTextColor={colors.textMuted}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="at-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="username"
+                placeholderTextColor={colors.textMuted}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@email.com"
-              placeholderTextColor={colors.textMuted}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="you@email.com"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
           <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Min 8 characters"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.input}
+                placeholder="Min 8 characters"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
           </View>
 
-          <Pressable onPress={handleSignup} style={styles.signupButton}>
-            <LinearGradient
-              colors={[colors.primary, colors.primaryMuted]}
-              style={styles.signupButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={styles.signupButtonText}>Create Account</Text>
-            </LinearGradient>
+          <Pressable
+            style={({ pressed }) => [styles.signupButton, pressed && styles.signupButtonPressed]}
+            onPress={handleSignup}
+          >
+            <Text style={styles.signupButtonText}>Create Account</Text>
           </Pressable>
 
           <Text style={styles.terms}>
@@ -135,6 +143,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size['3xl'],
     fontWeight: '700',
     color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typography.size.md,
@@ -153,30 +162,37 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingLeft: 4,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
     paddingVertical: 14,
     fontSize: typography.size.md,
     color: colors.textPrimary,
   },
   signupButton: {
+    backgroundColor: colors.primary,
     borderRadius: radius.md,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  signupButtonGradient: {
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
+  },
+  signupButtonPressed: {
+    opacity: 0.85,
   },
   signupButtonText: {
-    color: colors.textPrimary,
+    color: colors.textInverse,
     fontSize: typography.size.lg,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   terms: {
     color: colors.textMuted,
