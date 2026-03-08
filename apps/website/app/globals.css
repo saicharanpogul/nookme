@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   NookMe Landing Page — Apple-Style White Theme
+   NookMe Landing Page — Apple-Style White Theme (Next.js)
    ═══════════════════════════════════════════════════════════ */
 
 /* ─── Reset & Base ──────────────────────────────────────── */
@@ -43,7 +43,6 @@ html {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   background-color: var(--bg);
   color: var(--text-primary);
   line-height: 1.6;
@@ -157,6 +156,11 @@ a {
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   transition: all 0.3s ease;
+}
+
+.nav.scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .nav-inner {
@@ -397,6 +401,7 @@ a {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  display: inline-block;
 }
 
 .mockup-card-body {
@@ -453,7 +458,7 @@ a {
   gap: 4px;
 }
 
-/* ─── Problem Section ───────────────────────────────────── */
+/* ─── Problem Section ────────────────────────────────────── */
 .problem {
   padding: 120px 0;
   background: var(--surface);
@@ -471,13 +476,6 @@ a {
   padding: 32px;
   border: 1px solid var(--border);
   transition: all 0.3s ease;
-  opacity: 0;
-  transform: translateY(16px);
-}
-
-.problem-card.visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .problem-card:hover {
@@ -527,13 +525,6 @@ a {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(16px);
-}
-
-.feature-card.visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .feature-card:hover {
@@ -677,10 +668,14 @@ a {
 .fp-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 6px 14px;
-  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   background: var(--bg);
-  color: var(--color);
+  color: var(--fp-color);
   transition: all 0.25s ease;
 }
 
@@ -711,13 +706,6 @@ a {
   border: 1px solid var(--border);
   position: relative;
   transition: all 0.3s ease;
-  opacity: 0;
-  transform: translateY(16px);
-}
-
-.step-card.visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .step-card:hover {
@@ -926,6 +914,13 @@ a {
   margin-top: 12px;
 }
 
+.waitlist-success {
+  color: var(--accent-green);
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
 /* ─── Footer ────────────────────────────────────────────── */
 .footer {
   border-top: 1px solid var(--border);
@@ -1002,22 +997,22 @@ a {
 }
 
 /* ─── Animations ────────────────────────────────────────── */
-[data-animate] {
+.animate-item {
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-[data-animate].visible {
+.animate-item.visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-[data-animate]:nth-child(2) { transition-delay: 0.08s; }
-[data-animate]:nth-child(3) { transition-delay: 0.16s; }
-[data-animate]:nth-child(4) { transition-delay: 0.24s; }
-[data-animate]:nth-child(5) { transition-delay: 0.32s; }
-[data-animate]:nth-child(6) { transition-delay: 0.4s; }
+.animate-item:nth-child(2) { transition-delay: 0.08s; }
+.animate-item:nth-child(3) { transition-delay: 0.16s; }
+.animate-item:nth-child(4) { transition-delay: 0.24s; }
+.animate-item:nth-child(5) { transition-delay: 0.32s; }
+.animate-item:nth-child(6) { transition-delay: 0.4s; }
 
 /* ─── Responsive ────────────────────────────────────────── */
 @media (max-width: 900px) {
