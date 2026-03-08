@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: 'NookMe | Your Shared Content Space',
   description:
     'NookMe turns every shared link into a content card with its own thread. Stop losing great content in endless chat scrolls.',
+  manifest: '/manifest.json',
   openGraph: {
     title: 'NookMe | Your Shared Content Space',
     description:
@@ -34,6 +35,19 @@ export const metadata: Metadata = {
       'Turn every shared link into a content card with its own thread.',
     images: ['/og-image.png'],
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'NookMe',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#007AFF',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -45,8 +59,23 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
+      </body>
     </html>
   );
 }
