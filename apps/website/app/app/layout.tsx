@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { NookMeLogo } from '@/components/NookMeLogo';
 import type { User } from '@supabase/supabase-js';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -70,7 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className={`app-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <div className="sidebar-logo-icon">N</div>
+            <NookMeLogo size={32} />
             <span className="sidebar-logo-text">NookMe</span>
           </div>
         </div>

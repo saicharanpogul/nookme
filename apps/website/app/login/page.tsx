@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { NookMeLogo, NookMeWordmark } from '@/components/NookMeLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -110,8 +111,8 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <div className="login-logo-icon">N</div>
-          <h1 className="login-title">NookMe</h1>
+          <NookMeLogo size={44} />
+          <NookMeWordmark height={28} />
         </div>
         <p className="login-subtitle">
           {step === 'email'
