@@ -437,12 +437,12 @@ function WaitlistSection() {
     setStatus('submitting');
 
     try {
-      const res = await fetch('https://zqgevegynjtvhalsgxyd.supabase.co/rest/v1/waitlist', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/waitlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': 'sb_publishable_X78ylZJiLBjVyx9WKgi2Yg_mwKbePyh',
-          'Authorization': 'Bearer sb_publishable_X78ylZJiLBjVyx9WKgi2Yg_mwKbePyh',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           'Prefer': 'return=minimal',
         },
         body: JSON.stringify({ email }),
