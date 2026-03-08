@@ -56,7 +56,7 @@ function Hero() {
       <div className="hero-content">
         <div className="hero-badge">
           <span className="hero-badge-dot" />
-          Coming Soon — Join the Waitlist
+          Coming Soon. Join the Waitlist
         </div>
 
         <h1 className="hero-title">
@@ -413,7 +413,7 @@ function HowItWorks() {
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#5856D6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             </div>
             <h3 className="step-title">Discuss in Thread</h3>
-            <p className="step-text">React, comment, and discuss — all in a dedicated thread for that specific content.</p>
+            <p className="step-text">React, comment, and discuss, all in a dedicated thread for that specific content.</p>
             <div className="sv-messages">
               <div className="sv-msg sv-msg-other">This is literally me every morning 😂</div>
               <div className="sv-msg sv-msg-me">The part where it stares at the camera 💀</div>

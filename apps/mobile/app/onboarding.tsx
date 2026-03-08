@@ -29,7 +29,7 @@ const slides = [
     icon: 'cloud-done-outline' as const,
     iconColor: '#34C759',
     title: 'Shared Memory',
-    subtitle: 'Your conversations never\nget lost — everything is saved',
+    subtitle: 'Your conversations never\nget lost, everything is saved',
   },
 ];
 
