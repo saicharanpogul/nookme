@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { NookMeLogo } from '@/components/NookMeLogo';
+import { NookMeLogo, NookMeWordmark } from '@/components/NookMeLogo';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 /* ─── Icons (inline SVG helpers) ─────────────────────────── */
@@ -35,8 +35,7 @@ function Navbar() {
     <nav className={`nav ${scrolled ? 'scrolled' : ''}`}>
       <div className="nav-inner">
         <a href="#" className="nav-logo">
-          <NookMeLogo size={28} />
-          <span>NookMe</span>
+          <NookMeWordmark height={24} />
         </a>
         <div className="nav-links">
           <a href="#features" className="nav-link">Features</a>
@@ -520,8 +519,7 @@ function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <NookMeLogo size={24} />
-            <span className="footer-logo-text">NookMe</span>
+            <NookMeWordmark height={20} />
           </div>
           <p className="footer-tagline">Your shared content space.</p>
         </div>
