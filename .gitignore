@@ -45,3 +45,6 @@ coverage/
 # Misc
 *.log
 .cache/
+
+# Supabase (SQL schemas, seeds, migrations)
+supabase/

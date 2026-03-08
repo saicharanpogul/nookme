@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,28 +9,66 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { useRouter, Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius } from '@nookme/shared';
 import { useAuthStore } from '@/stores/authStore';
+import TypeLogo from '@/components/TypeLogo';
+
+type Step = 'email' | 'otp';
 
 export default function Login() {
   const router = useRouter();
-  const { signIn, loading } = useAuthStore();
+  const { sendOtp, verifyOtp, loading } = useAuthStore();
+  const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const otpRef = useRef<TextInput>(null);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter both email and password.');
+  const handleSendOtp = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      Alert.alert('Invalid email', 'Please enter a valid email address.');
       return;
     }
-    const { error } = await signIn(email, password);
+
+    const { error } = await sendOtp(trimmedEmail);
     if (error) {
-      Alert.alert('Sign In Failed', error);
+      Alert.alert('Error', error);
     } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setStep('otp');
+      setTimeout(() => otpRef.current?.focus(), 300);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length < 8) {
+      Alert.alert('Invalid code', 'Please enter the 8-digit code from your email.');
+      return;
+    }
+
+    const { error } = await verifyOtp(email.trim().toLowerCase(), otp);
+    if (error) {
+      Alert.alert('Verification failed', error);
+      setOtp('');
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)');
+    }
+  };
+
+  const handleResend = async () => {
+    setOtp('');
+    const { error } = await sendOtp(email.trim().toLowerCase());
+    if (error) {
+      Alert.alert('Error', error);
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Alert.alert('Code sent!', 'Check your email for a new code.');
     }
   };
 
@@ -42,96 +80,132 @@ export default function Login() {
       <View style={styles.inner}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="grid" size={32} color={colors.primary} />
-          </View>
-          <Text style={styles.logoText}>NookMe</Text>
+          <Image
+            source={require('@/assets/icon.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <TypeLogo width={180} height={45} color={colors.textPrimary} />
           <Text style={styles.logoSubtext}>Your shared content space</Text>
         </View>
 
-        {/* Form */}
-        <View style={styles.form}>
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Email</Text>
+        {step === 'email' ? (
+          /* ─── Email Step ─── */
+          <View style={styles.form}>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="you@email.com"
+                  placeholderTextColor={colors.textMuted}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                  editable={!loading}
+                  onSubmitEditing={handleSendOtp}
+                  returnKeyType="next"
+                />
+              </View>
+            </View>
+
+            <Text style={styles.hint}>
+              We'll send a one-time code to your email
+            </Text>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+                (!email.trim() || loading) && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleSendOtp}
+              disabled={!email.trim() || loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.textInverse} />
+              ) : (
+                <View style={styles.buttonContent}>
+                  <Text style={styles.primaryButtonText}>Continue</Text>
+                  <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
+                </View>
+              )}
+            </Pressable>
+          </View>
+        ) : (
+          /* ─── OTP Step ─── */
+          <View style={styles.form}>
+            <View style={styles.otpHeader}>
+              <Pressable onPress={() => { setStep('email'); setOtp(''); }}>
+                <Ionicons name="arrow-back" size={22} color={colors.primary} />
+              </Pressable>
+              <Text style={styles.otpTitle}>Enter verification code</Text>
+            </View>
+
+            <Text style={styles.otpSubtitle}>
+              We sent an 8-digit code to{'\n'}
+              <Text style={styles.otpEmail}>{email}</Text>
+            </Text>
+
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+              <Ionicons name="keypad-outline" size={18} color={colors.textMuted} />
               <TextInput
-                style={styles.input}
-                placeholder="you@email.com"
+                ref={otpRef}
+                style={[styles.input, styles.otpInput]}
+                placeholder="00000000"
                 placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+                value={otp}
+                onChangeText={(text) => {
+                  const clean = text.replace(/[^0-9]/g, '').slice(0, 8);
+                  setOtp(clean);
+                  if (clean.length === 8) {
+                    // Auto-verify when 8 digits entered
+                    setTimeout(() => handleVerifyOtp(), 100);
+                  }
+                }}
+                keyboardType="number-pad"
+                maxLength={8}
+                editable={!loading}
+                autoFocus
               />
             </View>
-          </View>
 
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
-          </View>
-
-          <Pressable style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.textInverse} />
-            ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            )}
-          </Pressable>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or continue with</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Social Login Buttons */}
-          <View style={styles.socialButtons}>
             <Pressable
-              style={({ pressed }) => [styles.socialButton, pressed && styles.socialButtonPressed]}
-              onPress={handleLogin}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed && styles.primaryButtonPressed,
+                (otp.length < 8 || loading) && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleVerifyOtp}
+              disabled={otp.length < 8 || loading}
             >
-              <Ionicons name="logo-apple" size={20} color={colors.textPrimary} />
-              <Text style={styles.socialButtonText}>Apple</Text>
+              {loading ? (
+                <ActivityIndicator color={colors.textInverse} />
+              ) : (
+                <Text style={styles.primaryButtonText}>Verify</Text>
+              )}
             </Pressable>
+
             <Pressable
-              style={({ pressed }) => [styles.socialButton, pressed && styles.socialButtonPressed]}
-              onPress={handleLogin}
+              style={styles.resendButton}
+              onPress={handleResend}
+              disabled={loading}
             >
-              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
-              <Text style={styles.socialButtonText}>Google</Text>
+              <Text style={styles.resendText}>Didn't get the code? Resend</Text>
             </Pressable>
           </View>
-        </View>
+        )}
 
-        {/* Sign up link */}
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>Don't have an account? </Text>
-          <Link href="/auth/signup" asChild>
-            <Pressable>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </Pressable>
-          </Link>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Ionicons name="shield-checkmark-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.footerText}>
+            No passwords needed. Passwordless login.
+          </Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -152,13 +226,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: colors.primarySurface,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 80,
+    height: 80,
     marginBottom: 16,
   },
   logoText: {
@@ -199,17 +269,40 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: typography.size.md,
     color: colors.textPrimary,
+    letterSpacing: 0,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  otpInput: {
+    letterSpacing: 4,
+    fontSize: typography.size.xl,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  hint: {
+    fontSize: typography.size.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
     marginTop: -4,
   },
-  forgotPasswordText: {
-    color: colors.primary,
-    fontSize: typography.size.sm,
-    fontWeight: '500',
+  otpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  loginButton: {
+  otpTitle: {
+    fontSize: typography.size.xl,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  otpSubtitle: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  otpEmail: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  primaryButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingVertical: 16,
@@ -217,65 +310,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  loginButtonPressed: {
+  primaryButtonPressed: {
     opacity: 0.85,
   },
-  loginButtonText: {
+  primaryButtonDisabled: {
+    opacity: 0.5,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  primaryButtonText: {
     color: colors.textInverse,
     fontSize: typography.size.lg,
     fontWeight: '600',
   },
-  divider: {
-    flexDirection: 'row',
+  resendButton: {
     alignItems: 'center',
-    gap: 12,
-    marginVertical: 4,
+    paddingVertical: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    color: colors.textMuted,
+  resendText: {
+    color: colors.primary,
     fontSize: typography.size.sm,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  socialButtonPressed: {
-    backgroundColor: colors.surface,
-  },
-  socialButtonText: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
     fontWeight: '500',
   },
-  signupContainer: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 32,
+    alignItems: 'center',
+    marginTop: 48,
+    gap: 6,
   },
-  signupText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-  },
-  signupLink: {
-    color: colors.primary,
-    fontSize: typography.size.md,
-    fontWeight: '600',
+  footerText: {
+    color: colors.textMuted,
+    fontSize: typography.size.sm,
   },
 });

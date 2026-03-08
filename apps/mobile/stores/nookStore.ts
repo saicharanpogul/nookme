@@ -66,6 +66,8 @@ interface NookState {
   deleteNook: (nookId: string) => Promise<void>;
   deleteContentCard: (cardId: string) => Promise<void>;
   createContentCard: (nookId: string, url: string) => Promise<string | null>;
+  createNook: (name: string, description: string, iconName?: string, color?: string) => Promise<string | null>;
+  searchContent: (query: string) => Promise<ContentCard[]>;
 }
 
 export const useNookStore = create<NookState>((set, get) => ({
@@ -306,6 +308,64 @@ export const useNookStore = create<NookState>((set, get) => ({
 
     if (error || !card) return null;
     return card.id;
+  },
+
+  createNook: async (name, description, iconName = 'people', color = '#007AFF') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('[Nook] createNook user:', user?.id);
+    if (!user) return null;
+
+    const { data: nook, error } = await supabase
+      .from('nooks')
+      .insert({
+        name,
+        description,
+        icon_name: iconName,
+        color,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    console.log('[Nook] Insert result:', { nookId: nook?.id, error: error?.message });
+    if (error || !nook) return null;
+
+    // Add creator as owner
+    const { error: memberError } = await supabase.from('nook_members').insert({
+      nook_id: nook.id,
+      user_id: user.id,
+      role: 'owner',
+    });
+    console.log('[Nook] Member insert:', { error: memberError?.message });
+
+    // Refresh nooks list
+    await get().fetchNooks();
+    return nook.id;
+  },
+
+  searchContent: async (query) => {
+    const { data, error } = await supabase
+      .from('content_cards')
+      .select(`
+        *,
+        shared_by_profile:profiles!content_cards_shared_by_fkey (
+          id, display_name, username, avatar_color
+        ),
+        reactions (*),
+        messages (count)
+      `)
+      .or(`title.ilike.%${query}%,description.ilike.%${query}%,url.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error || !data) return [];
+
+    return data.map((card: any) => ({
+      ...card,
+      shared_by_profile: card.shared_by_profile,
+      reactions: card.reactions || [],
+      message_count: card.messages?.[0]?.count || 0,
+    }));
   },
 }));
 

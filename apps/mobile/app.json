@@ -12,15 +12,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "xyz.nookme.app",
       "infoPlist": {
         "NSCameraUsageDescription": "NookMe needs camera access to share photos.",
-        "NSPhotoLibraryUsageDescription": "NookMe needs photo library access to share images."
-      },
-      "associatedDomains": ["applinks:nookme.xyz"]
+        "NSPhotoLibraryUsageDescription": "NookMe needs photo library access to share images.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,20 +41,21 @@
               "pathPrefix": "/nook"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "plugins": [
-      ["expo-router", { "root": "./app" }],
-      "expo-font",
       [
-        "expo-notifications",
+        "expo-router",
         {
-          "icon": "./assets/icon.png",
-          "color": "#007AFF"
+          "root": "./app"
         }
       ],
+      "expo-font",
       [
         "expo-share-intent",
         {
@@ -62,6 +65,14 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "root": "./app"
+      },
+      "eas": {
+        "projectId": "15ad053c-c1a6-4c2d-a5fc-9e4babec3ca0"
+      }
+    }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,24 +6,46 @@ import {
   TextInput,
   FlatList,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
-import { mockContentCards } from '@/data/mockData';
-
-const filterTabs = ['All', 'Nooks', 'Content', 'Tags'] as const;
+import { useNookStore, ContentCard } from '@/stores/nookStore';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const { searchContent, nooks } = useNookStore();
   const [query, setQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<typeof filterTabs[number]>('All');
+  const [results, setResults] = useState<ContentCard[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const filteredCards = mockContentCards.filter(card =>
-    card.title.toLowerCase().includes(query.toLowerCase()) ||
-    card.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))
-  );
+  const handleSearch = useCallback(async (text: string) => {
+    setQuery(text);
+    if (text.trim().length < 2) {
+      setResults([]);
+      setHasSearched(false);
+      return;
+    }
+    setSearching(true);
+    setHasSearched(true);
+    const data = await searchContent(text.trim());
+    setResults(data);
+    setSearching(false);
+  }, [searchContent]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays < 1) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString();
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,65 +57,52 @@ export default function SearchScreen() {
         <Ionicons name="search-outline" size={18} color={colors.textMuted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search content, nooks, tags..."
+          placeholder="Search your content..."
           placeholderTextColor={colors.textMuted}
           value={query}
-          onChangeText={setQuery}
+          onChangeText={handleSearch}
+          autoCorrect={false}
         />
         {query.length > 0 && (
-          <Pressable onPress={() => setQuery('')}>
+          <Pressable onPress={() => { setQuery(''); setResults([]); setHasSearched(false); }}>
             <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         )}
       </View>
 
-      <View style={styles.filterTabs}>
-        {filterTabs.map(tab => (
-          <Pressable
-            key={tab}
-            style={[styles.filterTab, activeFilter === tab && styles.filterTabActive]}
-            onPress={() => setActiveFilter(tab)}
-          >
-            <Text style={[styles.filterTabText, activeFilter === tab && styles.filterTabTextActive]}>
-              {tab}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {query.length === 0 ? (
-        <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Recent Searches</Text>
-          {['memes', 'startup', 'travel', 'crypto alpha'].map((term, i) => (
-            <Pressable
-              key={i}
-              style={({ pressed }) => [styles.recentItem, pressed && { backgroundColor: colors.surface }]}
-              onPress={() => setQuery(term)}
-            >
-              <Ionicons name="time-outline" size={16} color={colors.textMuted} />
-              <Text style={styles.recentText}>{term}</Text>
-              <View style={{ flex: 1 }} />
-              <Ionicons name="arrow-forward-outline" size={14} color={colors.textMuted} />
-            </Pressable>
-          ))}
-
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Trending Tags</Text>
-          <View style={styles.tagsGrid}>
-            {['funny', 'startup', 'cats', 'ai', 'travel', 'coding', 'memes', 'music'].map((tag, i) => (
+      {query.length < 2 ? (
+        <View style={styles.browseSection}>
+          <Text style={styles.sectionTitle}>Your Nooks</Text>
+          <View style={styles.nookChips}>
+            {nooks.map((nook) => (
               <Pressable
-                key={i}
-                style={({ pressed }) => [styles.tagChip, pressed && { backgroundColor: colors.surfaceHover }]}
-                onPress={() => setQuery(tag)}
+                key={nook.id}
+                style={({ pressed }) => [styles.nookChip, pressed && { backgroundColor: colors.surfaceHover }]}
+                onPress={() => router.push(`/nook/${nook.id}`)}
               >
-                <Ionicons name="pricetag-outline" size={12} color={colors.textSecondary} />
-                <Text style={styles.tagChipText}>{tag}</Text>
+                <View style={[styles.nookChipIcon, { backgroundColor: nook.color + '14' }]}>
+                  <Ionicons name={nook.icon_name as any} size={14} color={nook.color} />
+                </View>
+                <Text style={styles.nookChipText} numberOfLines={1}>{nook.name}</Text>
+                <Text style={styles.nookChipCount}>{nook.content_count || 0}</Text>
               </Pressable>
             ))}
           </View>
+
+          {nooks.length === 0 && (
+            <View style={styles.emptyBrowse}>
+              <Ionicons name="search-outline" size={40} color={colors.textMuted} />
+              <Text style={styles.emptyText}>Start sharing content to search it later</Text>
+            </View>
+          )}
+        </View>
+      ) : searching ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="small" color={colors.primary} />
         </View>
       ) : (
         <FlatList
-          data={filteredCards}
+          data={results}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.resultsList}
           renderItem={({ item }) => (
@@ -101,30 +110,31 @@ export default function SearchScreen() {
               style={({ pressed }) => [styles.resultCard, pressed && { backgroundColor: colors.surfaceHover }]}
               onPress={() => router.push(`/thread/${item.id}`)}
             >
-              <View style={[styles.resultThumbnail, { backgroundColor: platformColors[item.platform] + '14' }]}>
-                <Ionicons name={platformIcons[item.platform] as any} size={24} color={platformColors[item.platform]} />
+              <View style={[styles.resultThumbnail, { backgroundColor: (platformColors[item.platform as keyof typeof platformColors] || colors.primary) + '14' }]}>
+                <Ionicons
+                  name={(platformIcons[item.platform as keyof typeof platformIcons] || 'globe-outline') as any}
+                  size={24}
+                  color={platformColors[item.platform as keyof typeof platformColors] || colors.primary}
+                />
               </View>
               <View style={styles.resultContent}>
                 <View style={styles.resultHeader}>
-                  <View style={[styles.platformDot, { backgroundColor: platformColors[item.platform] }]} />
-                  <Text style={styles.resultPlatform}>{item.platform}</Text>
+                  <View style={[styles.platformDot, { backgroundColor: platformColors[item.platform as keyof typeof platformColors] || colors.primary }]} />
+                  <Text style={styles.resultPlatform}>{item.platform || 'web'}</Text>
                 </View>
-                <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.resultMeta}>
-                  <Ionicons name="person-outline" size={11} color={colors.textMuted} />
-                  <Text style={styles.resultMetaText}>
-                    {item.sharedBy.displayName} · {item.sharedAt}
-                  </Text>
-                </View>
+                <Text style={styles.resultTitle} numberOfLines={2}>{item.title || item.url}</Text>
+                <Text style={styles.resultMeta}>{formatDate(item.created_at)}</Text>
               </View>
             </Pressable>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No results found</Text>
-              <Text style={styles.emptySubtext}>Try a different search term</Text>
-            </View>
+            hasSearched ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={48} color={colors.textMuted} />
+                <Text style={styles.emptyText}>No results for "{query}"</Text>
+                <Text style={styles.emptySubtext}>Try a different search term</Text>
+              </View>
+            ) : null
           }
         />
       )}
@@ -140,33 +150,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
     borderRadius: radius.md, marginHorizontal: 20, paddingHorizontal: 14, gap: 10,
   },
-  searchInput: { flex: 1, paddingVertical: 14, fontSize: typography.size.md, color: colors.textPrimary },
-  filterTabs: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
-  filterTab: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: radius.full,
-    backgroundColor: colors.surface,
-  },
-  filterTabActive: { backgroundColor: colors.primarySurface },
-  filterTabText: { fontSize: typography.size.sm, color: colors.textSecondary, fontWeight: '500' },
-  filterTabTextActive: { color: colors.primary },
-  recentSection: { paddingHorizontal: 20, paddingTop: 8 },
+  searchInput: { flex: 1, paddingVertical: 14, fontSize: typography.size.md, color: colors.textPrimary, letterSpacing: 0 },
+  browseSection: { paddingHorizontal: 20, paddingTop: 20 },
   sectionTitle: {
     fontSize: typography.size.sm, color: colors.textMuted, fontWeight: '600',
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
   },
-  recentItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12,
-    paddingHorizontal: 4, borderRadius: radius.sm,
+  nookChips: { gap: 8 },
+  nookChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.surface, padding: 12, borderRadius: radius.md,
   },
-  recentText: { fontSize: typography.size.md, color: colors.textPrimary },
-  tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tagChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: radius.full,
-  },
-  tagChipText: { fontSize: typography.size.sm, color: colors.textSecondary, fontWeight: '500' },
-  resultsList: { paddingHorizontal: 20, gap: 10, paddingBottom: 20 },
+  nookChipIcon: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  nookChipText: { flex: 1, fontSize: typography.size.md, color: colors.textPrimary, fontWeight: '500' },
+  nookChipCount: { fontSize: typography.size.sm, color: colors.textMuted, fontWeight: '500' },
+  emptyBrowse: { alignItems: 'center', paddingTop: 40, gap: 12 },
+  loadingState: { alignItems: 'center', paddingTop: 40 },
+  resultsList: { paddingHorizontal: 20, gap: 10, paddingBottom: 20, paddingTop: 12 },
   resultCard: {
     flexDirection: 'row', backgroundColor: colors.surface,
     borderRadius: radius.md, padding: 14, gap: 14,
@@ -180,9 +180,8 @@ const styles = StyleSheet.create({
   platformDot: { width: 6, height: 6, borderRadius: 3 },
   resultPlatform: { fontSize: typography.size.xs, color: colors.textMuted, textTransform: 'capitalize' },
   resultTitle: { fontSize: typography.size.md, color: colors.textPrimary, fontWeight: '500' },
-  resultMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  resultMetaText: { fontSize: typography.size.xs, color: colors.textMuted },
+  resultMeta: { fontSize: typography.size.xs, color: colors.textMuted, marginTop: 2 },
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: typography.size.lg, color: colors.textPrimary, fontWeight: '600' },
+  emptyText: { fontSize: typography.size.lg, color: colors.textPrimary, fontWeight: '600', textAlign: 'center' },
   emptySubtext: { fontSize: typography.size.md, color: colors.textSecondary },
 });

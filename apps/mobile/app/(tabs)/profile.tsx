@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
-import { currentUser } from '@/data/mockData';
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 
 const settingsItems = [
   { icon: 'person-outline' as const, label: 'Edit Profile', color: colors.primary },
@@ -23,14 +25,77 @@ const settingsItems = [
   { icon: 'information-circle-outline' as const, label: 'About', color: colors.textSecondary },
 ];
 
+interface ProfileData {
+  display_name: string;
+  username: string;
+  avatar_color: string;
+}
+
+interface ProfileStats {
+  nookCount: number;
+  sharedCount: number;
+  reactionCount: number;
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
-  const { signOut } = useAuthStore();
+  const { signOut, user } = useAuthStore();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [stats, setStats] = useState<ProfileStats>({ nookCount: 0, sharedCount: 0, reactionCount: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) fetchProfile();
+  }, [user]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    // Fetch profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('display_name, username, avatar_color')
+      .eq('id', user.id)
+      .single();
+
+    if (profileData) setProfile(profileData);
+
+    // Fetch stats in parallel
+    const [nookRes, sharedRes, reactionRes] = await Promise.all([
+      supabase.from('nook_members').select('nook_id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('content_cards').select('id', { count: 'exact', head: true }).eq('shared_by', user.id),
+      supabase.from('reactions').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    ]);
+
+    setStats({
+      nookCount: nookRes.count || 0,
+      sharedCount: sharedRes.count || 0,
+      reactionCount: reactionRes.count || 0,
+    });
+    setLoading(false);
+  };
 
   const handleLogout = async () => {
     await signOut();
     router.replace('/onboarding');
   };
+
+  const handleSettingsTap = (label: string) => {
+    Alert.alert(label, 'Coming soon in the next update! 🚀');
+  };
+
+  const initials = profile?.display_name
+    ? profile.display_name.slice(0, 2).toUpperCase()
+    : '?';
+
+  if (loading && !profile) {
+    return (
+      <SafeAreaView style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,51 +106,26 @@ export default function ProfileScreen() {
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          <View style={[styles.avatarLarge, { backgroundColor: currentUser.avatarColor }]}>
-            <Text style={styles.avatarLargeText}>{currentUser.initials}</Text>
+          <View style={[styles.avatarLarge, { backgroundColor: profile?.avatar_color || '#007AFF' }]}>
+            <Text style={styles.avatarLargeText}>{initials}</Text>
           </View>
-          <Text style={styles.displayName}>{currentUser.displayName}</Text>
-          <Text style={styles.username}>@{currentUser.username}</Text>
+          <Text style={styles.displayName}>{profile?.display_name || 'User'}</Text>
+          <Text style={styles.username}>@{profile?.username || 'user'}</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>7</Text>
+              <Text style={styles.statValue}>{stats.nookCount}</Text>
               <Text style={styles.statLabel}>Nooks</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>2.4k</Text>
+              <Text style={styles.statValue}>{stats.sharedCount}</Text>
               <Text style={styles.statLabel}>Shared</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>847</Text>
+              <Text style={styles.statValue}>{stats.reactionCount}</Text>
               <Text style={styles.statLabel}>Reactions</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activity</Text>
-          <View style={styles.activityCards}>
-            <View style={styles.activityCard}>
-              <View style={[styles.activityIcon, { backgroundColor: colors.accentOrangeSurface }]}>
-                <Ionicons name="flame-outline" size={20} color="#FF9500" />
-              </View>
-              <View>
-                <Text style={styles.activityValue}>14 days</Text>
-                <Text style={styles.activityLabel}>Sharing streak</Text>
-              </View>
-            </View>
-            <View style={styles.activityCard}>
-              <View style={[styles.activityIcon, { backgroundColor: colors.accentGreenSurface }]}>
-                <Ionicons name="trending-up-outline" size={20} color={colors.accentGreen} />
-              </View>
-              <View>
-                <Text style={styles.activityValue}>42</Text>
-                <Text style={styles.activityLabel}>This week</Text>
-              </View>
             </View>
           </View>
         </View>
@@ -102,6 +142,7 @@ export default function ProfileScreen() {
                   pressed && styles.settingsItemPressed,
                   index === settingsItems.length - 1 && { borderBottomWidth: 0 },
                 ]}
+                onPress={() => handleSettingsTap(item.label)}
               >
                 <View style={styles.settingsItemLeft}>
                   <View style={[styles.settingsIcon, { backgroundColor: item.color + '14' }]}>
@@ -152,14 +193,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm, color: colors.textMuted, fontWeight: '600',
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12,
   },
-  activityCards: { flexDirection: 'row', gap: 10 },
-  activityCard: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderRadius: radius.md, padding: 16,
-  },
-  activityIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  activityValue: { fontSize: typography.size.lg, fontWeight: '700', color: colors.textPrimary },
-  activityLabel: { fontSize: typography.size.xs, color: colors.textMuted },
   settingsList: { backgroundColor: colors.surface, borderRadius: radius.md, overflow: 'hidden' },
   settingsItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
-import type { Platform } from '@nookme/shared';
+import type { Platform as PlatformType } from '@nookme/shared';
 import { useNookStore, ContentCard } from '@/stores/nookStore';
 
 function formatTime(dateStr: string): string {
@@ -42,7 +42,7 @@ function ContentCardItem({
   onPress: () => void;
   onReact: (emoji: string) => void;
 }) {
-  const platform = (card.platform || 'web') as Platform;
+  const platform = (card.platform || 'web') as PlatformType;
   const pColor = platformColors[platform] || '#86868B';
   const pIcon = platformIcons[platform] || 'globe-outline';
   return (
