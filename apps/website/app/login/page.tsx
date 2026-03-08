@@ -111,8 +111,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <NookMeLogo size={44} />
-          <NookMeWordmark height={28} />
+          <NookMeWordmark height={36} />
         </div>
         <p className="login-subtitle">
           {step === 'email'
