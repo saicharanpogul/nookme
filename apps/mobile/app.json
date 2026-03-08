@@ -52,6 +52,15 @@
           "icon": "./assets/icon.png",
           "color": "#007AFF"
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          }
+        }
       ]
     ]
   }

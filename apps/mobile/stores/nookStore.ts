@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { fetchLinkMetadata } from '@/lib/linkPreview';
 
 /* ─── Types ──────────────────────────────────────────────── */
 export interface Profile {
@@ -64,6 +65,7 @@ interface NookState {
   toggleReaction: (cardId: string, emoji: string) => Promise<void>;
   deleteNook: (nookId: string) => Promise<void>;
   deleteContentCard: (cardId: string) => Promise<void>;
+  createContentCard: (nookId: string, url: string) => Promise<string | null>;
 }
 
 export const useNookStore = create<NookState>((set, get) => ({
@@ -278,6 +280,32 @@ export const useNookStore = create<NookState>((set, get) => ({
     set((state) => ({
       contentCards: state.contentCards.filter((c) => c.id !== cardId),
     }));
+  },
+
+  createContentCard: async (nookId, url) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Fetch link metadata (title, description, platform)
+    const meta = await fetchLinkMetadata(url);
+
+    const { data: card, error } = await supabase
+      .from('content_cards')
+      .insert({
+        nook_id: nookId,
+        shared_by: user.id,
+        url: meta.url,
+        title: meta.title,
+        description: meta.description || null,
+        platform: meta.platform,
+        creator: null,
+        tags: [],
+      })
+      .select()
+      .single();
+
+    if (error || !card) return null;
+    return card.id;
   },
 }));
 
