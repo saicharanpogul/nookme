@@ -30,10 +30,36 @@ export default function DashboardPage() {
   const [newNookName, setNewNookName] = useState('');
   const [shareUrl, setShareUrl] = useState('');
   const [creating, setCreating] = useState(false);
+  const [ogData, setOgData] = useState<{ title?: string; description?: string; image?: string; siteName?: string } | null>(null);
+  const [ogLoading, setOgLoading] = useState(false);
 
   useEffect(() => {
     fetchNooks();
   }, []);
+
+  // Auto-fetch OG metadata when URL changes
+  useEffect(() => {
+    if (!shareUrl.trim() || !shareUrl.startsWith('http')) {
+      setOgData(null);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setOgLoading(true);
+      try {
+        const res = await fetch('/api/og', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: shareUrl.trim() }),
+        });
+        const data = await res.json();
+        setOgData(data);
+      } catch {
+        setOgData(null);
+      }
+      setOgLoading(false);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [shareUrl]);
 
   const fetchNooks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -118,13 +144,15 @@ export default function DashboardPage() {
       nook_id: nooks[0].id,
       shared_by: user.id,
       url,
-      title: url,
+      title: ogData?.title || url,
+      description: ogData?.description || null,
       platform,
       tags: [],
     });
 
     setShowShareModal(false);
     setShareUrl('');
+    setOgData(null);
     await fetchNooks();
     setCreating(false);
   };
@@ -228,6 +256,22 @@ export default function DashboardPage() {
               autoFocus
               onKeyDown={e => e.key === 'Enter' && handleShareLink()}
             />
+
+            {/* OG Preview */}
+            {ogLoading && <div className="og-preview-loading">Fetching preview...</div>}
+            {ogData && !ogLoading && (ogData.title || ogData.description) && (
+              <div className="og-preview">
+                {ogData.image && (
+                  <img src={ogData.image} alt="" className="og-preview-img" onError={e => (e.currentTarget.style.display = 'none')} />
+                )}
+                <div className="og-preview-text">
+                  <div className="og-preview-title">{ogData.title}</div>
+                  {ogData.description && <div className="og-preview-desc">{ogData.description}</div>}
+                  {ogData.siteName && <div className="og-preview-site">{ogData.siteName}</div>}
+                </div>
+              </div>
+            )}
+
             <div className="modal-actions">
               <button className="modal-btn" onClick={() => setShowShareModal(false)}>Cancel</button>
               <button className="modal-btn modal-btn-primary" onClick={handleShareLink} disabled={!shareUrl.trim() || creating}>

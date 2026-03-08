@@ -31,6 +31,9 @@ export default function NookDetailPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUrl, setNewUrl] = useState('');
   const [adding, setAdding] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [ogData, setOgData] = useState<{ title?: string; description?: string } | null>(null);
+  const [ogLoading, setOgLoading] = useState(false);
 
   useEffect(() => {
     if (nookId) fetchData();
@@ -54,6 +57,30 @@ export default function NookDetailPage() {
     setLoading(false);
   };
 
+  // Auto-fetch OG metadata
+  useEffect(() => {
+    if (!newUrl.trim() || !newUrl.startsWith('http')) {
+      setOgData(null);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setOgLoading(true);
+      try {
+        const res = await fetch('/api/og', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: newUrl.trim() }),
+        });
+        const data = await res.json();
+        setOgData(data);
+      } catch {
+        setOgData(null);
+      }
+      setOgLoading(false);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [newUrl]);
+
   const handleAddContent = async () => {
     if (!newUrl.trim() || adding) return;
     setAdding(true);
@@ -71,13 +98,15 @@ export default function NookDetailPage() {
       nook_id: nookId,
       shared_by: user.id,
       url,
-      title: url,
+      title: ogData?.title || url,
+      description: ogData?.description || null,
       platform,
       tags: [],
     });
 
     setShowAddModal(false);
     setNewUrl('');
+    setOgData(null);
     await fetchData();
     setAdding(false);
   };
@@ -103,7 +132,15 @@ export default function NookDetailPage() {
           <h1 className="nook-detail-title">{nook?.name || 'Nook'}</h1>
           {nook?.description && <p className="nook-detail-desc">{nook.description}</p>}
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button className="dash-btn" onClick={() => {
+            const inviteUrl = `${window.location.origin}/invite/${nookId}`;
+            navigator.clipboard.writeText(inviteUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}>
+            {copied ? '✓ Copied!' : '🔗 Invite'}
+          </button>
           <button className="dash-btn dash-btn-primary" onClick={() => setShowAddModal(true)}>+ Add Content</button>
         </div>
       </div>
@@ -152,6 +189,17 @@ export default function NookDetailPage() {
               autoFocus
               onKeyDown={e => e.key === 'Enter' && handleAddContent()}
             />
+
+            {ogLoading && <div className="og-preview-loading">Fetching preview...</div>}
+            {ogData && !ogLoading && (ogData.title || ogData.description) && (
+              <div className="og-preview">
+                <div className="og-preview-text">
+                  <div className="og-preview-title">{ogData.title}</div>
+                  {ogData.description && <div className="og-preview-desc">{ogData.description}</div>}
+                </div>
+              </div>
+            )}
+
             <div className="modal-actions">
               <button className="modal-btn" onClick={() => setShowAddModal(false)}>Cancel</button>
               <button className="modal-btn modal-btn-primary" onClick={handleAddContent} disabled={!newUrl.trim() || adding}>

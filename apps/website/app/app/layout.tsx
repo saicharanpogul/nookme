@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { NookMeLogo } from '@/components/NookMeLogo';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import type { User } from '@supabase/supabase-js';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -142,6 +143,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Link>
         ))}
       </nav>
+
+      <PWAInstallPrompt />
     </div>
   );
 }
