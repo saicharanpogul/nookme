@@ -7,6 +7,8 @@ import {
   Pressable,
   TextInput,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -159,7 +161,7 @@ export default function NookDetail() {
 
       {/* Share Modal */}
       <Modal visible={showShareModal} transparent animationType="slide" onRequestClose={() => setShowShareModal(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <Pressable style={styles.modalBackdrop} onPress={() => setShowShareModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
@@ -179,18 +181,26 @@ export default function NookDetail() {
             </View>
 
             <View style={styles.modalSources}>
-              {[
-                { icon: 'logo-instagram', label: 'Instagram', color: '#E4405F' },
-                { icon: 'musical-notes', label: 'TikTok', color: '#000' },
-                { icon: 'logo-youtube', label: 'YouTube', color: '#FF0000' },
-                { icon: 'logo-twitter', label: 'Twitter', color: '#1DA1F2' },
-                { icon: 'globe-outline', label: 'Web', color: '#86868B' },
-              ].map((source, i) => (
-                <View key={i} style={styles.sourceChip}>
-                  <Ionicons name={source.icon as any} size={16} color={source.color} />
-                  <Text style={styles.sourceChipText}>{source.label}</Text>
-                </View>
-              ))}
+              <View style={styles.sourceChip}>
+                <Ionicons name={'logo-instagram' as any} size={16} color="#E4405F" />
+                <Text style={styles.sourceChipText}>Instagram</Text>
+              </View>
+              <View style={styles.sourceChip}>
+                <Ionicons name={'logo-tiktok' as any} size={16} color="#000" />
+                <Text style={styles.sourceChipText}>TikTok</Text>
+              </View>
+              <View style={styles.sourceChip}>
+                <Ionicons name={'logo-youtube' as any} size={16} color="#FF0000" />
+                <Text style={styles.sourceChipText}>YouTube</Text>
+              </View>
+              <View style={styles.sourceChip}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#000' }}>𝕏</Text>
+                <Text style={styles.sourceChipText}>X</Text>
+              </View>
+              <View style={styles.sourceChip}>
+                <Ionicons name={'globe-outline' as any} size={16} color="#86868B" />
+                <Text style={styles.sourceChipText}>Web</Text>
+              </View>
             </View>
 
             <Pressable
@@ -200,7 +210,7 @@ export default function NookDetail() {
               <Text style={styles.shareButtonText}>Share to Nook</Text>
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
