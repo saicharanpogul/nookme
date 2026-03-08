@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   Pressable,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius, shadows } from '@nookme/shared';
-import { mockNooks } from '@/data/mockData';
+import { useNookStore, Nook } from '@/stores/nookStore';
 
 function NookAvatar({ iconName, color }: { iconName: string; color: string }) {
   return (
@@ -20,32 +23,29 @@ function NookAvatar({ iconName, color }: { iconName: string; color: string }) {
   );
 }
 
-function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () => void }) {
+function NookCard({ nook, onPress }: { nook: Nook; onPress: () => void }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.nookCard, pressed && styles.nookCardPressed]}
       onPress={onPress}
     >
-      <NookAvatar iconName={nook.iconName} color={nook.color} />
+      <NookAvatar iconName={nook.icon_name} color={nook.color} />
 
       <View style={styles.nookContent}>
         <View style={styles.nookHeader}>
           <View style={styles.nookNameRow}>
-            {nook.isPinned && (
-              <Ionicons name="pin" size={12} color={colors.primary} style={{ marginRight: 4 }} />
-            )}
             <Text style={styles.nookName} numberOfLines={1}>{nook.name}</Text>
           </View>
-          <Text style={styles.nookTime}>{nook.lastActivity}</Text>
+          <Text style={styles.nookTime}>{nook.last_activity || ''}</Text>
         </View>
 
         <View style={styles.nookMeta}>
           <Text style={styles.nookDescription} numberOfLines={1}>
             {nook.description}
           </Text>
-          {nook.unreadCount > 0 && (
+          {(nook.content_count ?? 0) > 0 && (
             <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>{nook.unreadCount}</Text>
+              <Text style={styles.unreadText}>{nook.content_count}</Text>
             </View>
           )}
         </View>
@@ -53,7 +53,7 @@ function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () =>
         <View style={styles.nookFooter}>
           <Ionicons name="people-outline" size={13} color={colors.textMuted} />
           <Text style={styles.nookMemberCount}>
-            {nook.members.length} members · {nook.contentCount} items
+            {nook.member_count || 0} members · {nook.content_count || 0} items
           </Text>
         </View>
       </View>
@@ -63,8 +63,19 @@ function NookCard({ nook, onPress }: { nook: typeof mockNooks[0]; onPress: () =>
 
 export default function HomeScreen() {
   const router = useRouter();
-  const pinnedNooks = mockNooks.filter(n => n.isPinned);
-  const otherNooks = mockNooks.filter(n => !n.isPinned);
+  const { nooks, nooksLoading, fetchNooks } = useNookStore();
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchNooks();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fetchNooks();
+    setRefreshing(false);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -86,17 +97,23 @@ export default function HomeScreen() {
 
       {/* Nook List */}
       <FlatList
-        data={[...pinnedNooks, ...otherNooks]}
+        data={nooks}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <NookCard
             nook={item}
-            onPress={() => router.push(`/nook/${item.id}`)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/nook/${item.id}`);
+            }}
           />
         )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
         ListHeaderComponent={
           <View style={styles.quickActions}>
             <Pressable style={({ pressed }) => [styles.quickAction, pressed && styles.quickActionPressed]}>

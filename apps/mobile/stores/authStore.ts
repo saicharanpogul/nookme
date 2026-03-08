@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { registerForPushNotifications } from '@/lib/notifications';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -68,6 +69,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           username,
           avatar_color: '#007AFF',
         });
+
+        // Seed sample data so new users can explore the app
+        await supabase.rpc('seed_user_data', { target_user_id: data.user.id });
       }
 
       set({ loading: false });
@@ -88,6 +92,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ loading: false });
       if (error) return { error: error.message };
+
+      // Register for push notifications
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        registerForPushNotifications(user.id).catch(() => { });
+      }
+
       return { error: null };
     } catch (err: any) {
       set({ loading: false });

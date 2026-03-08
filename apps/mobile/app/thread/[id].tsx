@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,43 +7,55 @@ import {
   Pressable,
   TextInput,
   KeyboardAvoidingView,
-  Platform,
+  Platform as RNPlatform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
-import { mockContentCards, mockMessages, currentUser } from '@/data/mockData';
+import type { Platform } from '@nookme/shared';
+import { useNookStore, Message, ContentCard } from '@/stores/nookStore';
+import { useAuthStore } from '@/stores/authStore';
 
-function MessageBubble({ message }: { message: typeof mockMessages[0] }) {
-  const isMe = message.sender.id === currentUser.id;
+function formatTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function MessageBubble({ message, currentUserId }: { message: Message; currentUserId: string }) {
+  const isMe = message.sender_id === currentUserId;
+  const profile = message.sender_profile;
+  const initials = profile
+    ? profile.display_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '??';
 
   return (
     <View style={[styles.messageBubbleWrapper, isMe && styles.messageBubbleWrapperMe]}>
       {!isMe && (
-        <View style={[styles.messageAvatar, { backgroundColor: message.sender.avatarColor }]}>
-          <Text style={styles.messageAvatarText}>{message.sender.initials}</Text>
+        <View style={[styles.messageAvatar, { backgroundColor: profile?.avatar_color || '#007AFF' }]}>
+          <Text style={styles.messageAvatarText}>{initials}</Text>
         </View>
       )}
       <View style={styles.messageContentWrapper}>
         {!isMe && (
-          <Text style={styles.messageSender}>{message.sender.displayName}</Text>
+          <Text style={styles.messageSender}>{profile?.display_name || 'Unknown'}</Text>
         )}
         <View style={[styles.messageBubble, isMe && styles.messageBubbleMe]}>
           <Text style={[styles.messageText, isMe && styles.messageTextMe]}>{message.text}</Text>
         </View>
         <View style={styles.messageFooter}>
-          <Text style={styles.messageTime}>{message.sentAt}</Text>
-          {message.reactions.length > 0 && (
-            <View style={styles.messageReactions}>
-              {message.reactions.map((r, i) => (
-                <View key={i} style={styles.miniReaction}>
-                  <Text style={styles.miniReactionEmoji}>{r.emoji}</Text>
-                  <Text style={styles.miniReactionCount}>{r.count}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+          <Text style={styles.messageTime}>{formatTime(message.created_at)}</Text>
         </View>
       </View>
     </View>
@@ -54,8 +66,32 @@ export default function ThreadView() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [messageText, setMessageText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const card = mockContentCards.find(c => c.id === id) || mockContentCards[0];
+  const { user } = useAuthStore();
+  const { contentCards, messages, messagesLoading, fetchMessages, sendMessage, toggleReaction } = useNookStore();
+  const card = contentCards.find(c => c.id === id);
+
+  useEffect(() => {
+    if (id) fetchMessages(id as string);
+  }, [id]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchMessages(id as string);
+    setRefreshing(false);
+  }, [id]);
+
+  const handleSend = async () => {
+    if (!messageText.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await sendMessage(id as string, messageText.trim());
+    setMessageText('');
+  };
+
+  const platform = (card?.platform || 'web') as Platform;
+  const pColor = platformColors[platform] || '#86868B';
+  const pIcon = platformIcons[platform] || 'globe-outline';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,59 +102,73 @@ export default function ThreadView() {
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Thread</Text>
-          <Text style={styles.headerSubtitle}>{card.threadCount} replies</Text>
+          <Text style={styles.headerSubtitle}>{messages.length} replies</Text>
         </View>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={RNPlatform.OS === 'ios' ? 'padding' : 'height'}>
         <FlatList
-          data={mockMessages}
+          data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
+          renderItem={({ item }) => (
+            <MessageBubble message={item} currentUserId={user?.id || ''} />
+          )}
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
           ListHeaderComponent={
-            <View style={styles.originalCard}>
-              <View style={styles.originalCardHeader}>
-                <View style={[styles.platformBadge, { backgroundColor: platformColors[card.platform] + '12' }]}>
-                  <Ionicons name={platformIcons[card.platform] as any} size={14} color={platformColors[card.platform]} />
-                  <Text style={[styles.platformBadgeText, { color: platformColors[card.platform] }]}>
-                    {card.platform}
-                  </Text>
+            card ? (
+              <View style={styles.originalCard}>
+                <View style={styles.originalCardHeader}>
+                  <View style={[styles.platformBadge, { backgroundColor: pColor + '12' }]}>
+                    <Ionicons name={pIcon as any} size={14} color={pColor} />
+                    <Text style={[styles.platformBadgeText, { color: pColor }]}>
+                      {platform}
+                    </Text>
+                  </View>
+                  <Text style={styles.originalCardTime}>{formatTime(card.created_at)}</Text>
                 </View>
-                <Text style={styles.originalCardTime}>{card.sharedAt}</Text>
-              </View>
 
-              <View style={styles.originalCardBody}>
-                <View style={[styles.originalCardThumbnail, { backgroundColor: platformColors[card.platform] + '12' }]}>
-                  <Ionicons name={platformIcons[card.platform] as any} size={32} color={platformColors[card.platform]} />
+                <View style={styles.originalCardBody}>
+                  <View style={[styles.originalCardThumbnail, { backgroundColor: pColor + '12' }]}>
+                    <Ionicons name={pIcon as any} size={32} color={pColor} />
+                  </View>
+                  <View style={styles.originalCardContent}>
+                    <Text style={styles.originalCardTitle}>{card.title}</Text>
+                    {card.description && (
+                      <Text style={styles.originalCardDescription}>{card.description}</Text>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.originalCardContent}>
-                  <Text style={styles.originalCardTitle}>{card.title}</Text>
-                  {card.description && (
-                    <Text style={styles.originalCardDescription}>{card.description}</Text>
-                  )}
-                </View>
-              </View>
 
-              <View style={styles.originalCardReactions}>
-                {card.reactions.map((r, i) => (
-                  <Pressable key={i} style={styles.reactionPill}>
-                    <Text style={styles.reactionPillEmoji}>{r.emoji}</Text>
-                    <Text style={styles.reactionPillCount}>{r.count}</Text>
+                <View style={styles.originalCardReactions}>
+                  {(card.reaction_counts || []).map((r, i) => (
+                    <Pressable
+                      key={i}
+                      style={styles.reactionPill}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleReaction(card.id, r.emoji);
+                      }}
+                    >
+                      <Text style={styles.reactionPillEmoji}>{r.emoji}</Text>
+                      <Text style={styles.reactionPillCount}>{r.count}</Text>
+                    </Pressable>
+                  ))}
+                  <Pressable style={styles.addReactionButton}>
+                    <Ionicons name="happy-outline" size={16} color={colors.textMuted} />
                   </Pressable>
-                ))}
-                <Pressable style={styles.addReactionButton}>
-                  <Ionicons name="happy-outline" size={16} color={colors.textMuted} />
-                </Pressable>
-              </View>
+                </View>
 
-              <View style={styles.threadDivider}>
-                <View style={styles.threadDividerLine} />
-                <Text style={styles.threadDividerText}>{card.threadCount} replies</Text>
-                <View style={styles.threadDividerLine} />
+                <View style={styles.threadDivider}>
+                  <View style={styles.threadDividerLine} />
+                  <Text style={styles.threadDividerText}>{messages.length} replies</Text>
+                  <View style={styles.threadDividerLine} />
+                </View>
               </View>
-            </View>
+            ) : null
           }
         />
 
@@ -136,7 +186,10 @@ export default function ThreadView() {
               onChangeText={setMessageText}
               multiline
             />
-            <Pressable style={[styles.sendButton, messageText.length > 0 && styles.sendButtonActive]}>
+            <Pressable
+              style={[styles.sendButton, messageText.length > 0 && styles.sendButtonActive]}
+              onPress={handleSend}
+            >
               <Ionicons name="arrow-up" size={18} color={messageText.length > 0 ? colors.textInverse : colors.textMuted} />
             </Pressable>
           </View>
@@ -209,13 +262,6 @@ const styles = StyleSheet.create({
   messageTextMe: { color: colors.textInverse },
   messageFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
   messageTime: { fontSize: 10, color: colors.textMuted },
-  messageReactions: { flexDirection: 'row', gap: 4 },
-  miniReaction: {
-    flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: colors.surface,
-    borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 2,
-  },
-  miniReactionEmoji: { fontSize: 11 },
-  miniReactionCount: { fontSize: 10, color: colors.textMuted },
   composer: {
     borderTopWidth: 0.5, borderTopColor: colors.border, paddingHorizontal: 16,
     paddingVertical: 10, paddingBottom: 30, backgroundColor: colors.background,

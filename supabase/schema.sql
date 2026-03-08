@@ -16,6 +16,7 @@ create table profiles (
   display_name text not null,
   username text unique not null,
   avatar_color text default '#007AFF',
+  push_token text,
   created_at timestamptz default now()
 );
 

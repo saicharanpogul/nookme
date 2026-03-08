@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,20 +9,42 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
-import { mockNooks, mockContentCards } from '@/data/mockData';
+import type { Platform } from '@nookme/shared';
+import { useNookStore, ContentCard } from '@/stores/nookStore';
+
+function formatTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
 
 function ContentCardItem({
   card,
   onPress,
+  onReact,
 }: {
-  card: typeof mockContentCards[0];
+  card: ContentCard;
   onPress: () => void;
+  onReact: (emoji: string) => void;
 }) {
+  const platform = (card.platform || 'web') as Platform;
+  const pColor = platformColors[platform] || '#86868B';
+  const pIcon = platformIcons[platform] || 'globe-outline';
   return (
     <Pressable
       style={({ pressed }) => [styles.contentCard, pressed && styles.contentCardPressed]}
@@ -31,16 +53,16 @@ function ContentCardItem({
       {/* Platform indicator */}
       <View style={styles.cardHeader}>
         <View style={styles.cardPlatform}>
-          <View style={[styles.platformDot, { backgroundColor: platformColors[card.platform] }]} />
-          <Text style={styles.platformText}>{card.platform}</Text>
+          <View style={[styles.platformDot, { backgroundColor: pColor }]} />
+          <Text style={styles.platformText}>{platform}</Text>
         </View>
-        <Text style={styles.cardTime}>{card.sharedAt}</Text>
+        <Text style={styles.cardTime}>{formatTime(card.created_at)}</Text>
       </View>
 
       {/* Thumbnail + Content */}
       <View style={styles.cardBody}>
-        <View style={[styles.cardThumbnail, { backgroundColor: platformColors[card.platform] + '12' }]}>
-          <Ionicons name={platformIcons[card.platform] as any} size={28} color={platformColors[card.platform]} />
+        <View style={[styles.cardThumbnail, { backgroundColor: pColor + '12' }]}>
+          <Ionicons name={pIcon as any} size={28} color={pColor} />
         </View>
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={2}>{card.title}</Text>
@@ -54,7 +76,7 @@ function ContentCardItem({
       </View>
 
       {/* Tags */}
-      {card.tags.length > 0 && (
+      {card.tags && card.tags.length > 0 && (
         <View style={styles.cardTags}>
           {card.tags.map((tag, i) => (
             <View key={i} style={styles.tagPill}>
@@ -68,11 +90,18 @@ function ContentCardItem({
       {/* Reactions + Thread */}
       <View style={styles.cardFooter}>
         <View style={styles.reactions}>
-          {card.reactions.map((r, i) => (
-            <View key={i} style={styles.reactionChip}>
+          {(card.reaction_counts || []).map((r, i) => (
+            <Pressable
+              key={i}
+              style={styles.reactionChip}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onReact(r.emoji);
+              }}
+            >
               <Text style={styles.reactionEmoji}>{r.emoji}</Text>
               <Text style={styles.reactionCount}>{r.count}</Text>
-            </View>
+            </Pressable>
           ))}
           <Pressable style={styles.addReaction}>
             <Ionicons name="add" size={14} color={colors.textMuted} />
@@ -80,19 +109,23 @@ function ContentCardItem({
         </View>
         <Pressable style={styles.threadButton} onPress={onPress}>
           <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
-          <Text style={styles.threadCount}>{card.threadCount}</Text>
+          <Text style={styles.threadCount}>{card.thread_count || 0}</Text>
         </Pressable>
       </View>
 
       {/* Shared by */}
-      <View style={styles.sharedBy}>
-        <View style={[styles.sharedByAvatar, { backgroundColor: card.sharedBy.avatarColor }]}>
-          <Text style={styles.sharedByInitials}>{card.sharedBy.initials}</Text>
+      {card.shared_by_profile && (
+        <View style={styles.sharedBy}>
+          <View style={[styles.sharedByAvatar, { backgroundColor: card.shared_by_profile.avatar_color }]}>
+            <Text style={styles.sharedByInitials}>
+              {card.shared_by_profile.display_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.sharedByText}>
+            Shared by {card.shared_by_profile.display_name}
+          </Text>
         </View>
-        <Text style={styles.sharedByText}>
-          Shared by {card.sharedBy.displayName}
-        </Text>
-      </View>
+      )}
     </Pressable>
   );
 }
@@ -102,8 +135,21 @@ export default function NookDetail() {
   const router = useRouter();
   const [showShareModal, setShowShareModal] = useState(false);
   const [linkInput, setLinkInput] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
-  const nook = mockNooks.find(n => n.id === id) || mockNooks[0];
+  const { nooks, contentCards, cardsLoading, fetchContentCards, toggleReaction } = useNookStore();
+  const nook = nooks.find(n => n.id === id);
+
+  useEffect(() => {
+    if (id) fetchContentCards(id as string);
+  }, [id]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fetchContentCards(id as string);
+    setRefreshing(false);
+  }, [id]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -113,9 +159,9 @@ export default function NookDetail() {
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>{nook.name}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{nook?.name || 'Nook'}</Text>
           <Text style={styles.headerSubtitle}>
-            {nook.members.length} members · {nook.contentCount} items
+            {nook?.member_count || 0} members · {nook?.content_count || 0} items
           </Text>
         </View>
         <Pressable style={styles.headerAction}>
@@ -123,31 +169,22 @@ export default function NookDetail() {
         </Pressable>
       </View>
 
-      {/* Members bar */}
-      <View style={styles.membersBar}>
-        {nook.members.slice(0, 5).map((member, i) => (
-          <View
-            key={i}
-            style={[styles.memberChip, member.status === 'online' && styles.memberChipOnline]}
-          >
-            <View style={[styles.memberAvatar, { backgroundColor: member.avatarColor }]}>
-              <Text style={styles.memberInitials}>{member.initials}</Text>
-            </View>
-            <Text style={styles.memberName}>{member.displayName.split(' ')[0]}</Text>
-            {member.status === 'online' && <View style={styles.onlineDot} />}
-          </View>
-        ))}
-      </View>
-
       {/* Content Feed */}
       <FlatList
-        data={mockContentCards}
+        data={contentCards}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <ContentCardItem card={item} onPress={() => router.push(`/thread/${item.id}`)} />
+          <ContentCardItem
+            card={item}
+            onPress={() => router.push(`/thread/${item.id}`)}
+            onReact={(emoji) => toggleReaction(item.id, emoji)}
+          />
         )}
         contentContainerStyle={styles.feed}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
       />
 
