@@ -5,11 +5,11 @@ import {
   StyleSheet,
   FlatList,
   Pressable,
-  SafeAreaView,
   TextInput,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius, platformColors, platformIcons } from '@nookme/shared';
