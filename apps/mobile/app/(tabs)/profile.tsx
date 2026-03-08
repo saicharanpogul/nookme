@@ -7,9 +7,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
 import { currentUser } from '@/data/mockData';
+import { useAuthStore } from '@/stores/authStore';
 
 const settingsItems = [
   { icon: 'person-outline' as const, label: 'Edit Profile', color: colors.primary },
@@ -22,6 +24,14 @@ const settingsItems = [
 ];
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { signOut } = useAuthStore();
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/onboarding');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -106,7 +116,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout */}
-        <Pressable style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.8 }]}>
+        <Pressable style={({ pressed }) => [styles.logoutButton, pressed && { opacity: 0.8 }]} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={18} color={colors.danger} />
           <Text style={styles.logoutText}>Log Out</Text>
         </Pressable>

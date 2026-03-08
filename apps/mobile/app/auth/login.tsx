@@ -7,18 +7,31 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Login() {
   const router = useRouter();
+  const { signIn, loading } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    router.replace('/(tabs)');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Missing fields', 'Please enter both email and password.');
+      return;
+    }
+    const { error } = await signIn(email, password);
+    if (error) {
+      Alert.alert('Sign In Failed', error);
+    } else {
+      router.replace('/(tabs)');
+    }
   };
 
   return (
@@ -76,8 +89,13 @@ export default function Login() {
           <Pressable
             style={({ pressed }) => [styles.loginButton, pressed && styles.loginButtonPressed]}
             onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.loginButtonText}>Sign In</Text>
+            {loading ? (
+              <ActivityIndicator color={colors.textInverse} />
+            ) : (
+              <Text style={styles.loginButtonText}>Sign In</Text>
+            )}
           </Pressable>
 
           {/* Divider */}

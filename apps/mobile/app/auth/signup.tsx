@@ -7,20 +7,39 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius } from '@nookme/shared';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function Signup() {
   const router = useRouter();
+  const { signUp, loading } = useAuthStore();
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSignup = () => {
-    router.replace('/(tabs)');
+  const handleSignup = async () => {
+    if (!name || !username || !email || !password) {
+      Alert.alert('Missing fields', 'Please fill in all fields.');
+      return;
+    }
+    if (password.length < 8) {
+      Alert.alert('Weak password', 'Password must be at least 8 characters.');
+      return;
+    }
+    const { error } = await signUp(email, password, name, username);
+    if (error) {
+      Alert.alert('Sign Up Failed', error);
+    } else {
+      Alert.alert('Check your email', 'We sent you a confirmation link. Please verify your email to continue.', [
+        { text: 'OK', onPress: () => router.replace('/auth/login') },
+      ]);
+    }
   };
 
   return (
@@ -100,8 +119,13 @@ export default function Signup() {
           <Pressable
             style={({ pressed }) => [styles.signupButton, pressed && styles.signupButtonPressed]}
             onPress={handleSignup}
+            disabled={loading}
           >
-            <Text style={styles.signupButtonText}>Create Account</Text>
+            {loading ? (
+              <ActivityIndicator color={colors.textInverse} />
+            ) : (
+              <Text style={styles.signupButtonText}>Create Account</Text>
+            )}
           </Pressable>
 
           <Text style={styles.terms}>
